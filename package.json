@@ -1,0 +1,42 @@
+{
+  "name": "harbor",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Harbor — online store for thoughtful goods",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "postinstall": "node scripts/postinstall.mjs",
+    "setup": "node scripts/setup.mjs",
+    "dev": "node scripts/dev.mjs",
+    "dev:api": "npm run dev --workspace=@ecommerce/api",
+    "dev:web": "npm run dev --workspace=@ecommerce/web",
+    "dev:serve": "concurrently -n api,web -c cyan,magenta \"npm run dev:api\" \"npm run dev:web\"",
+    "seed": "node scripts/setup.mjs",
+    "build": "npm run build --workspace=@ecommerce/shared && npm run build --workspace=@ecommerce/api && npm run build --workspace=@ecommerce/web",
+    "start": "node scripts/start.mjs",
+    "test": "npm run test --workspace=@ecommerce/api",
+    "prisma:generate": "prisma generate",
+    "prisma:push": "prisma db push --skip-generate",
+    "images": "node scripts/download-product-images.mjs"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "prisma": "^6.7.0",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.7.0",
+    "bcryptjs": "^3.0.2",
+    "dotenv": "^16.4.7"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

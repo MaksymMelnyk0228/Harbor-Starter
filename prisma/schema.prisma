@@ -1,0 +1,225 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String         @id @default(cuid())
+  email        String         @unique
+  passwordHash String
+  name         String
+  role         String         @default("customer")
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  addresses    Address[]
+  cart         Cart?
+  orders       Order[]
+  reviews      Review[]
+  savedProducts SavedProduct[]
+
+  @@index([role])
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  name        String
+  description String
+  products    Product[]
+}
+
+model Product {
+  id          String         @id @default(cuid())
+  slug        String         @unique
+  name        String
+  description String
+  price       Int
+  compareAt   Int?
+  categoryId  String
+  category    Category       @relation(fields: [categoryId], references: [id])
+  status      String         @default("active")
+  featured    Boolean        @default(false)
+  recommended Boolean        @default(false)
+  ratingAvg   Float          @default(0)
+  reviewCount Int            @default(0)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  images      ProductImage[]
+  reviews     Review[]
+  inventory   Inventory?
+  cartItems   CartItem[]
+  orderItems  OrderItem[]
+  savedBy     SavedProduct[]
+  stats       ProductStat?
+
+  @@index([categoryId])
+  @@index([status])
+  @@index([featured])
+  @@index([price])
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  alt       String
+  sortOrder Int     @default(0)
+
+  @@index([productId])
+}
+
+model ProductStat {
+  productId  String  @id
+  product    Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  pageViews  Int     @default(0)
+  addToCarts Int     @default(0)
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  rating    Int
+  title     String
+  body      String
+  createdAt DateTime @default(now())
+
+  @@index([productId])
+  @@index([userId])
+}
+
+model Inventory {
+  id         String  @id @default(cuid())
+  productId  String  @unique
+  product    Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity   Int
+  lowStockAt Int     @default(8)
+  reserved   Int     @default(0)
+
+  @@index([quantity])
+}
+
+model Cart {
+  id        String     @id @default(cuid())
+  userId    String     @unique
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     CartItem[]
+  updatedAt DateTime   @updatedAt
+}
+
+model CartItem {
+  id        String  @id @default(cuid())
+  cartId    String
+  cart      Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+  unitPrice Int
+
+  @@unique([cartId, productId])
+}
+
+model Address {
+  id         String  @id @default(cuid())
+  userId     String
+  user       User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label      String
+  fullName   String
+  line1      String
+  line2      String?
+  city       String
+  region     String
+  postalCode String
+  country    String
+  phone      String?
+  isDefault  Boolean @default(false)
+  createdAt  DateTime @default(now())
+  orders     Order[]
+
+  @@index([userId])
+}
+
+model Order {
+  id                String      @id @default(cuid())
+  orderNumber       String      @unique
+  userId            String
+  user              User        @relation(fields: [userId], references: [id])
+  addressId         String?
+  address           Address?    @relation(fields: [addressId], references: [id])
+  status            String      @default("pending")
+  subtotal          Int
+  tax               Int
+  shipping          Int
+  total             Int
+  shippingMethod    String
+  estimatedDelivery DateTime?
+  customerEmail     String
+  customerName      String
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  items             OrderItem[]
+  payments          Payment[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  name      String
+  quantity  Int
+  unitPrice Int
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model Payment {
+  id             String   @id @default(cuid())
+  orderId        String
+  order          Order    @relation(fields: [orderId], references: [id])
+  provider       String
+  method         String
+  status         String
+  amount         Int
+  currency       String   @default("USD")
+  last4          String?
+  brand          String?
+  failureReason  String?
+  idempotencyKey String?
+  walletAddress  String?
+  network        String?
+  txHash         String?
+  cryptoAmount   String?
+  token          String?
+  confirmations  Int?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([orderId])
+  @@index([status])
+  @@index([idempotencyKey])
+}
+
+model SavedProduct {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+}
